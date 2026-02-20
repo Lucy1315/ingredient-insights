@@ -5,7 +5,7 @@ import {
   extractPrimaryToken,
   generateIngredientBase,
 } from "./ingredientNormalizer";
-import { getPrimaryKorean } from "./innMapping";
+import { getPrimaryKorean, toKoreanINN } from "./innMapping";
 import type { OpenFDAConfidence, OpenFDAEnrichmentRow, SourceRow } from "../types/dashboard";
 
 const OPENFDA_BASE = "https://api.fda.gov/drug";
@@ -127,7 +127,18 @@ export async function enrichRowWithOpenFDA(
   }
 
   const ingredientBase = found?.ingredients ? generateIngredientBase(found.ingredients) : norm;
-  const koName = getPrimaryKorean(ingredientBase) ?? "";
+
+  // 한국어 성분명 결정 우선순위:
+  // 1. ingredientBase(INN명)로 매핑 시도
+  // 2. 원래 제품명 토큰(브랜드명)으로 직접 매핑 시도
+  // 3. 정규화된 전체 제품명으로 시도
+  let koName = getPrimaryKorean(ingredientBase) ?? "";
+  if (!koName) {
+    koName = toKoreanINN(token) ?? "";
+  }
+  if (!koName) {
+    koName = toKoreanINN(norm) ?? "";
+  }
 
   const enriched: OpenFDAEnrichmentRow = {
     순번: row.순번,
