@@ -39,52 +39,52 @@ const MetricsGrid: React.FC<MetricsGridProps> = ({ metrics }) => {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
       <MetricCard
-        label="Total Rows"
+        label="전체 행 수"
         value={metrics.total_rows}
-        sub="Source products"
+        sub="소스 품목"
         icon={<TrendingUp className="w-4 h-4" />}
       />
       <MetricCard
-        label="OpenFDA REVIEW"
+        label="OpenFDA 검토 필요"
         value={metrics.openfda_review_count}
-        sub="Needs manual review"
+        sub="수동 검토 필요"
         variant={metrics.openfda_review_count > 0 ? "warning" : "success"}
         icon={<AlertTriangle className="w-4 h-4" />}
       />
       <MetricCard
-        label="MFDS Not Found"
+        label="MFDS 미검색"
         value={metrics.mfds_not_found}
-        sub="No MFDS match"
+        sub="MFDS 매칭 없음"
         variant={metrics.mfds_not_found > 0 ? "error" : "success"}
         icon={<Search className="w-4 h-4" />}
       />
       <MetricCard
-        label="Avg Generics"
+        label="평균 제네릭 수"
         value={metrics.average_generic_per_source.toFixed(1)}
-        sub="Per source product"
+        sub="소스 품목당"
         icon={<Minus className="w-4 h-4" />}
       />
 
       <MetricCard
-        label="HIGH Confidence"
+        label="HIGH 신뢰도"
         value={metrics.confidence_HIGH}
         variant="success"
         icon={<CheckCircle className="w-4 h-4" />}
       />
       <MetricCard
-        label="MEDIUM Confidence"
+        label="MEDIUM 신뢰도"
         value={metrics.confidence_MEDIUM}
         variant="warning"
       />
       <MetricCard
-        label="REVIEW Confidence"
+        label="REVIEW 신뢰도"
         value={metrics.confidence_REVIEW}
         variant="error"
       />
       <MetricCard
-        label="Generic Item Rows"
+        label="제네릭 항목 행"
         value={metrics.total_generic_item_rows}
-        sub="Total in generic_items sheet"
+        sub="generic_items 시트 합계"
         icon={<TrendingDown className="w-4 h-4" />}
       />
     </div>

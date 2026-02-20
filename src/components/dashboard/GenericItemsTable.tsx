@@ -33,15 +33,15 @@ const GenericItemsTable: React.FC<GenericItemsTableProps> = ({ items, compact })
     <div className="space-y-3">
       <input
         className="w-full max-w-sm px-3 py-1.5 rounded bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-        placeholder="Filter…"
+        placeholder="필터…"
         value={filter}
         onChange={(e) => setFilter(e.target.value)}
       />
 
       <Tabs defaultValue="items">
         <TabsList className="bg-secondary border border-border">
-          <TabsTrigger value="items" className="text-xs">Generic Items ({filteredItems.length})</TabsTrigger>
-          <TabsTrigger value="compact" className="text-xs">Compact List ({filteredCompact.length})</TabsTrigger>
+          <TabsTrigger value="items" className="text-xs">제네릭 항목 ({filteredItems.length})</TabsTrigger>
+          <TabsTrigger value="compact" className="text-xs">요약 목록 ({filteredCompact.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="items">
@@ -81,7 +81,7 @@ const GenericItemsTable: React.FC<GenericItemsTableProps> = ({ items, compact })
                   </tr>
                 ))}
                 {filteredItems.length === 0 && (
-                  <tr><td colSpan={9} className="text-center py-8 text-muted-foreground">No items</td></tr>
+                  <tr><td colSpan={9} className="text-center py-8 text-muted-foreground">항목이 없습니다</td></tr>
                 )}
               </tbody>
             </table>
@@ -93,7 +93,7 @@ const GenericItemsTable: React.FC<GenericItemsTableProps> = ({ items, compact })
             <table className="w-full text-xs min-w-[600px]">
               <thead className="sticky top-0 bg-secondary border-b border-border">
                 <tr>
-                  {["순번", "Product", "Ingredient_base", "Generic Count", "Product Names (joined)"].map((col) => (
+                  {["순번", "제품명", "성분명(영문)", "제네릭 수", "제품명 목록 (합산)"].map((col) => (
                     <th key={col} className="px-3 py-2 text-left text-muted-foreground font-semibold whitespace-nowrap">{col}</th>
                   ))}
                 </tr>
@@ -113,7 +113,7 @@ const GenericItemsTable: React.FC<GenericItemsTableProps> = ({ items, compact })
                   </tr>
                 ))}
                 {filteredCompact.length === 0 && (
-                  <tr><td colSpan={5} className="text-center py-8 text-muted-foreground">No data</td></tr>
+                  <tr><td colSpan={5} className="text-center py-8 text-muted-foreground">데이터가 없습니다</td></tr>
                 )}
               </tbody>
             </table>

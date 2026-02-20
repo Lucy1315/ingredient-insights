@@ -15,8 +15,8 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ rows }) => {
         <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
           <AlertTriangle className="w-6 h-6 text-success" />
         </div>
-        <p className="text-foreground font-medium">No rows require review</p>
-        <p className="text-sm text-muted-foreground">All products resolved with HIGH or MEDIUM confidence</p>
+        <p className="text-foreground font-medium">검토가 필요한 항목 없음</p>
+        <p className="text-sm text-muted-foreground">모든 제품이 HIGH 또는 MEDIUM 신뢰도로 해결되었습니다</p>
       </div>
     );
   }
@@ -26,19 +26,19 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ rows }) => {
       <div className="flex items-center gap-2 p-3 rounded-lg bg-warning/10 border border-warning/30">
         <AlertTriangle className="w-4 h-4 text-warning flex-shrink-0" />
         <p className="text-sm text-warning">
-          <strong>{reviewRows.length}</strong> products could not be resolved via OpenFDA and require manual ingredient input or review.
+          <strong>{reviewRows.length}</strong>개 제품이 OpenFDA에서 해결되지 않아 수동 성분 입력 또는 검토가 필요합니다.
         </p>
       </div>
 
       <div className="overflow-auto rounded-lg border border-border max-h-96">
         <table className="w-full text-xs min-w-[600px]">
           <thead className="sticky top-0 bg-secondary border-b border-border">
-            <tr>
+              <tr>
               <th className="px-3 py-2 text-left text-muted-foreground font-semibold">순번</th>
-              <th className="px-3 py-2 text-left text-muted-foreground font-semibold">Product</th>
-              <th className="px-3 py-2 text-left text-muted-foreground font-semibold">Product_norm</th>
-              <th className="px-3 py-2 text-left text-muted-foreground font-semibold">Ingredient_base (fallback)</th>
-              <th className="px-3 py-2 text-left text-muted-foreground font-semibold">Action</th>
+              <th className="px-3 py-2 text-left text-muted-foreground font-semibold">제품명</th>
+              <th className="px-3 py-2 text-left text-muted-foreground font-semibold">정규화명</th>
+              <th className="px-3 py-2 text-left text-muted-foreground font-semibold">성분명(대체)</th>
+              <th className="px-3 py-2 text-left text-muted-foreground font-semibold">바로가기</th>
             </tr>
           </thead>
           <tbody>
@@ -67,7 +67,7 @@ const ReviewQueue: React.FC<ReviewQueueProps> = ({ rows }) => {
         </table>
       </div>
       <p className="text-xs text-muted-foreground">
-        For REVIEW items, the Ingredient_base is derived from the normalized product name (fallback). Manual verification is recommended.
+        REVIEW 항목의 경우 성분명은 정규화된 제품명(대체값)에서 도출됩니다. 수동 확인이 권장됩니다.
       </p>
     </div>
   );

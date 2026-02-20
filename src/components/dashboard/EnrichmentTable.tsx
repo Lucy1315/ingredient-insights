@@ -46,13 +46,13 @@ const EnrichmentTable: React.FC<EnrichmentTableProps> = ({ rows }) => {
 
   const columns: { key: SortKey; label: string; width?: string }[] = [
     { key: "순번", label: "순번", width: "w-12" },
-    { key: "Product", label: "Product" },
-    { key: "openfda_brand_name", label: "FDA Brand" },
-    { key: "openfda_generic_name", label: "FDA Generic" },
-    { key: "openfda_active_ingredients_raw", label: "Active Ingredients (raw)" },
-    { key: "Ingredient_base", label: "Ingredient_base (EN)" },
+    { key: "Product", label: "제품명" },
+    { key: "openfda_brand_name", label: "FDA 브랜드명" },
+    { key: "openfda_generic_name", label: "FDA 일반명" },
+    { key: "openfda_active_ingredients_raw", label: "활성 성분 (원문)" },
+    { key: "Ingredient_base", label: "성분명(영문)" },
     { key: "Ingredient_base_ko", label: "한국어 성분명 (MFDS)" },
-    { key: "openfda_confidence", label: "Confidence" },
+    { key: "openfda_confidence", label: "신뢰도" },
   ];
 
   return (
@@ -60,7 +60,7 @@ const EnrichmentTable: React.FC<EnrichmentTableProps> = ({ rows }) => {
       <div className="flex items-center justify-between gap-3">
         <input
           className="flex-1 max-w-xs px-3 py-1.5 rounded bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-          placeholder="Filter rows…"
+          placeholder="행 필터…"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
         />
@@ -69,7 +69,7 @@ const EnrichmentTable: React.FC<EnrichmentTableProps> = ({ rows }) => {
           className="flex items-center gap-2 px-3 py-1.5 rounded bg-primary/10 border border-primary/30 text-primary text-sm hover:bg-primary/20 transition-colors"
         >
           <Download className="w-4 h-4" />
-          Download Sheet
+          시트 다운로드
         </button>
       </div>
 
@@ -112,7 +112,7 @@ const EnrichmentTable: React.FC<EnrichmentTableProps> = ({ rows }) => {
               </tr>
             ))}
             {sorted.length === 0 && (
-              <tr><td colSpan={8} className="text-center py-8 text-muted-foreground">No data</td></tr>
+              <tr><td colSpan={8} className="text-center py-8 text-muted-foreground">데이터가 없습니다</td></tr>
             )}
           </tbody>
         </table>

@@ -59,8 +59,8 @@ const Index: React.FC = () => {
               <FlaskConical className="w-4 h-4 text-primary" />
             </div>
             <div>
-              <h1 className="text-sm font-bold text-foreground tracking-tight">MFDS Matching Dashboard</h1>
-              <p className="text-[10px] text-muted-foreground">OpenFDA → MFDS Integrated Workflow</p>
+            <h1 className="text-sm font-bold text-foreground tracking-tight">MFDS 매칭 대시보드</h1>
+              <p className="text-[10px] text-muted-foreground">OpenFDA → MFDS 통합 워크플로우</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -70,7 +70,7 @@ const Index: React.FC = () => {
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors"
               >
                 <Download className="w-3.5 h-3.5" />
-                Export Excel
+                엑셀 내보내기
               </button>
             )}
             {(job.status !== "idle") && (
@@ -79,12 +79,12 @@ const Index: React.FC = () => {
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-secondary text-secondary-foreground text-xs hover:bg-secondary/80 transition-colors"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
-                Reset
+                초기화
               </button>
             )}
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <div className={cn("pulse-dot", isRunning ? "" : isDone ? "!bg-success" : "!bg-muted-foreground")} />
-              {isRunning ? "Processing…" : isDone ? "Ready" : "Idle"}
+              {isRunning ? "처리 중…" : isDone ? "완료" : "대기"}
             </div>
           </div>
         </div>
@@ -103,7 +103,7 @@ const Index: React.FC = () => {
           <div className="panel p-4 border-warning/30 bg-warning/5 animate-slide-up">
             <div className="flex items-center gap-2 mb-2">
               <AlertTriangle className="w-4 h-4 text-warning" />
-              <span className="text-sm font-semibold text-warning">Validation Issues ({job.errors.length})</span>
+              <span className="text-sm font-semibold text-warning">검증 오류 ({job.errors.length})</span>
             </div>
             <ul className="space-y-1">
               {job.errors.map((e, i) => (
@@ -117,25 +117,25 @@ const Index: React.FC = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="bg-card border border-border w-full justify-start overflow-x-auto h-auto p-1 gap-0.5">
             <TabsTrigger value="setup" className="flex items-center gap-1.5 text-xs px-3 py-1.5">
-              <Settings className="w-3.5 h-3.5" /> Setup
+              <Settings className="w-3.5 h-3.5" /> 설정
             </TabsTrigger>
             <TabsTrigger value="progress" className="flex items-center gap-1.5 text-xs px-3 py-1.5" disabled={job.status === "idle"}>
-              <Activity className="w-3.5 h-3.5" /> Progress
+              <Activity className="w-3.5 h-3.5" /> 진행 상황
             </TabsTrigger>
             <TabsTrigger value="results" className="flex items-center gap-1.5 text-xs px-3 py-1.5" disabled={!isDone}>
-              <List className="w-3.5 h-3.5" /> Results
+              <List className="w-3.5 h-3.5" /> 결과
               {isDone && <span className="ml-1 px-1.5 py-0.5 rounded-full bg-primary/20 text-primary text-[10px]">{job.resultRows.length}</span>}
             </TabsTrigger>
             <TabsTrigger value="enrichment" className="flex items-center gap-1.5 text-xs px-3 py-1.5" disabled={!isDone}>
-              <Database className="w-3.5 h-3.5" /> OpenFDA Enrichment
+              <Database className="w-3.5 h-3.5" /> OpenFDA 보강
               {isDone && <span className="ml-1 px-1.5 py-0.5 rounded-full bg-primary/20 text-primary text-[10px]">{job.enrichmentRows.length}</span>}
             </TabsTrigger>
             <TabsTrigger value="generics" className="flex items-center gap-1.5 text-xs px-3 py-1.5" disabled={!isDone}>
-              <FlaskConical className="w-3.5 h-3.5" /> Generic Items
+              <FlaskConical className="w-3.5 h-3.5" /> 제네릭 목록
               {isDone && <span className="ml-1 px-1.5 py-0.5 rounded-full bg-primary/20 text-primary text-[10px]">{job.genericItems.length}</span>}
             </TabsTrigger>
             <TabsTrigger value="review" className="flex items-center gap-1.5 text-xs px-3 py-1.5" disabled={!isDone}>
-              <Eye className="w-3.5 h-3.5" /> Review Queue
+              <Eye className="w-3.5 h-3.5" /> 검토 대기열
               {isDone && job.summary.openfda_review_count > 0 && (
                 <span className="ml-1 px-1.5 py-0.5 rounded-full bg-warning/20 text-warning text-[10px]">{job.summary.openfda_review_count}</span>
               )}
@@ -152,8 +152,8 @@ const Index: React.FC = () => {
                     <Zap className="w-4 h-4 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-foreground">Quick Test with Sample Data</p>
-                    <p className="text-xs text-muted-foreground">20 well-known drugs (Aspirin, Lipitor, Plavix…) pre-loaded for pipeline testing</p>
+                  <p className="text-sm font-semibold text-foreground">샘플 데이터로 빠른 테스트</p>
+                  <p className="text-xs text-muted-foreground">20개 주요 의약품 (아스피린, 리피토, 플라빅스…) 파이프라인 테스트용 사전 탑재</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -162,14 +162,14 @@ const Index: React.FC = () => {
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-border bg-secondary text-xs text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
                   >
                     <Table2 className="w-3.5 h-3.5" />
-                    {showSamplePreview ? "Hide Preview" : "Preview"}
+                    {showSamplePreview ? "미리보기 닫기" : "미리보기"}
                   </button>
                   <button
                     onClick={downloadSampleExcel}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-border bg-secondary text-xs text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
                   >
                     <FileDown className="w-3.5 h-3.5" />
-                    Download .xlsx
+                    .xlsx 다운로드
                   </button>
                   <button
                     onClick={async () => {
@@ -186,7 +186,7 @@ const Index: React.FC = () => {
                     className="flex items-center gap-1.5 px-4 py-1.5 rounded bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50"
                   >
                     <Zap className="w-3.5 h-3.5" />
-                    Use Sample & Run
+                    샘플로 실행
                   </button>
                 </div>
               </div>
@@ -219,28 +219,28 @@ const Index: React.FC = () => {
             <div className="grid md:grid-cols-2 gap-6">
               <div className="panel p-5 space-y-4">
                 <div>
-                  <h2 className="text-sm font-semibold text-foreground mb-1">Step 1 — Source Upload</h2>
-                  <p className="text-xs text-muted-foreground">Upload an Excel file with columns: <code className="bg-muted px-1 py-0.5 rounded text-xs">순번</code> and <code className="bg-muted px-1 py-0.5 rounded text-xs">Product</code></p>
+                  <h2 className="text-sm font-semibold text-foreground mb-1">1단계 — 소스 업로드</h2>
+                  <p className="text-xs text-muted-foreground">열이 있는 엑셀 파일 업로드: <code className="bg-muted px-1 py-0.5 rounded text-xs">순번</code> 및 <code className="bg-muted px-1 py-0.5 rounded text-xs">Product</code></p>
                 </div>
                 <FileUpload onFile={handleFile} disabled={isRunning} />
                 {uploadedFile && (
                   <div className="flex items-center gap-2 p-2 rounded bg-primary/8 border border-primary/20">
                     <div className="pulse-dot flex-shrink-0" />
                     <span className="text-xs text-primary font-medium truncate">{uploadedFile.name}</span>
-                    <span className="text-xs text-muted-foreground ml-auto flex-shrink-0">ready</span>
+                    <span className="text-xs text-muted-foreground ml-auto flex-shrink-0">준비 완료</span>
                   </div>
                 )}
               </div>
 
               <div className="panel p-5 space-y-4">
                 <div>
-                  <h2 className="text-sm font-semibold text-foreground mb-1">Processing Options</h2>
-                  <p className="text-xs text-muted-foreground">Configure matching behavior before running</p>
+                  <h2 className="text-sm font-semibold text-foreground mb-1">처리 옵션</h2>
+                  <p className="text-xs text-muted-foreground">실행 전 매칭 동작 설정</p>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-xs font-medium text-foreground block mb-2">Count Mode</label>
+                    <label className="text-xs font-medium text-foreground block mb-2">카운트 방식</label>
                     <div className="flex gap-2">
                       {(["ingredient", "ingredient+form"] as const).map((mode) => (
                         <button
@@ -253,7 +253,7 @@ const Index: React.FC = () => {
                               : "border-border bg-secondary text-muted-foreground hover:border-primary/40"
                           )}
                         >
-                          {mode === "ingredient" ? "Ingredient Only" : "Ingredient + 제형"}
+                          {mode === "ingredient" ? "성분만" : "성분 + 제형"}
                         </button>
                       ))}
                     </div>
@@ -261,8 +261,8 @@ const Index: React.FC = () => {
 
                   <div className="flex items-center justify-between p-3 rounded-lg bg-secondary border border-border">
                     <div>
-                      <p className="text-xs font-medium text-foreground">Include Revoked (취소/취하)</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">Count products that have been cancelled</p>
+                      <p className="text-xs font-medium text-foreground">취소/취하 품목 포함</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">취소된 품목도 카운트에 포함</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
@@ -288,31 +288,31 @@ const Index: React.FC = () => {
                     {isRunning ? (
                       <>
                         <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                        Processing…
+                        처리 중…
                       </>
                     ) : (
                       <>
                         <Play className="w-4 h-4" />
-                        Run Full Pipeline
+                        전체 파이프라인 실행
                       </>
                     )}
                   </button>
 
                   {!uploadedFile && (
-                    <p className="text-xs text-muted-foreground text-center">Upload a file above to enable processing</p>
+                    <p className="text-xs text-muted-foreground text-center">처리를 시작하려면 파일을 업로드하세요</p>
                   )}
                 </div>
 
                 {/* Workflow summary */}
                 <div className="border-t border-border pt-4 space-y-2">
-                  <p className="text-xs font-medium text-muted-foreground">Pipeline Steps</p>
+                  <p className="text-xs font-medium text-muted-foreground">파이프라인 단계</p>
                   {[
-                    "Parse Excel & detect 순번 / Product",
-                    "Normalize & query OpenFDA (label + NDC)",
-                    "Generate Ingredient_base (salt-stripped, sorted)",
-                    "Match against MFDS ingredient search API",
-                    "Calculate 신약 여부 + generic counts",
-                    "Validate & export 5-sheet Excel",
+                    "엑셀 파싱 및 순번 / Product 열 감지",
+                    "정규화 후 OpenFDA 조회 (label + NDC)",
+                    "Ingredient_base 생성 (염 제거, 정렬)",
+                    "MFDS 성분 검색 API 매칭",
+                    "신약 여부 + 제네릭 수 산출",
+                    "검증 후 5시트 엑셀 내보내기",
                   ].map((step, i) => (
                     <div key={i} className="flex items-start gap-2">
                       <span className="text-[10px] font-mono text-primary mt-0.5 flex-shrink-0">{i + 1}.</span>
@@ -327,7 +327,7 @@ const Index: React.FC = () => {
           {/* PROGRESS TAB */}
           <TabsContent value="progress" className="mt-4">
             <div className="panel p-6 space-y-6">
-              <h2 className="text-sm font-semibold text-foreground">Pipeline Progress</h2>
+              <h2 className="text-sm font-semibold text-foreground">파이프라인 진행 상황</h2>
               <ProgressPipeline status={job.status} progress={job.progress} message={job.message} />
 
               {/* Live stats during run */}
@@ -335,15 +335,15 @@ const Index: React.FC = () => {
                 <div className="grid grid-cols-3 gap-3 pt-2 border-t border-border">
                   <div className="text-center">
                     <p className="text-xl font-bold font-mono text-foreground">{job.sourceRows.length}</p>
-                    <p className="text-xs text-muted-foreground">Source Rows</p>
+                    <p className="text-xs text-muted-foreground">소스 행</p>
                   </div>
                   <div className="text-center">
                     <p className="text-xl font-bold font-mono text-primary">{job.enrichmentRows.length}</p>
-                    <p className="text-xs text-muted-foreground">Enriched</p>
+                    <p className="text-xs text-muted-foreground">보강 완료</p>
                   </div>
                   <div className="text-center">
                     <p className="text-xl font-bold font-mono text-foreground">{job.resultRows.length}</p>
-                    <p className="text-xs text-muted-foreground">Matched</p>
+                    <p className="text-xs text-muted-foreground">매칭 완료</p>
                   </div>
                 </div>
               )}
@@ -354,8 +354,8 @@ const Index: React.FC = () => {
           <TabsContent value="results" className="mt-4">
             <div className="panel p-5">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-semibold text-foreground">Results — 신약 여부 & Generic Counts</h2>
-                <span className="text-xs text-muted-foreground">Count mode: <strong className="text-primary">{job.countMode}</strong></span>
+                <h2 className="text-sm font-semibold text-foreground">결과 — 신약 여부 & 제네릭 수</h2>
+                <span className="text-xs text-muted-foreground">카운트 방식: <strong className="text-primary">{job.countMode}</strong></span>
               </div>
               <ResultsTable rows={job.resultRows} />
             </div>
@@ -364,7 +364,7 @@ const Index: React.FC = () => {
           {/* OPENFDA ENRICHMENT TAB */}
           <TabsContent value="enrichment" className="mt-4">
             <div className="panel p-5">
-              <h2 className="text-sm font-semibold text-foreground mb-4">OpenFDA Enrichment Layer</h2>
+              <h2 className="text-sm font-semibold text-foreground mb-4">OpenFDA 보강 레이어</h2>
               <EnrichmentTable rows={job.enrichmentRows} />
             </div>
           </TabsContent>
@@ -372,7 +372,7 @@ const Index: React.FC = () => {
           {/* GENERIC ITEMS TAB */}
           <TabsContent value="generics" className="mt-4">
             <div className="panel p-5">
-              <h2 className="text-sm font-semibold text-foreground mb-4">Generic Transparency Sheets</h2>
+              <h2 className="text-sm font-semibold text-foreground mb-4">제네릭 투명성 시트</h2>
               <GenericItemsTable items={job.genericItems} compact={job.genericCompact} />
             </div>
           </TabsContent>
@@ -380,7 +380,7 @@ const Index: React.FC = () => {
           {/* REVIEW QUEUE TAB */}
           <TabsContent value="review" className="mt-4">
             <div className="panel p-5">
-              <h2 className="text-sm font-semibold text-foreground mb-4">Review Queue — Low Confidence Items</h2>
+              <h2 className="text-sm font-semibold text-foreground mb-4">검토 대기열 — 낮은 신뢰도 항목</h2>
               <ReviewQueue rows={job.enrichmentRows} />
             </div>
           </TabsContent>
@@ -388,7 +388,7 @@ const Index: React.FC = () => {
 
         {/* Footer note */}
         <footer className="text-center text-xs text-muted-foreground py-2 border-t border-border">
-          MFDS Matching Dashboard · OpenFDA API + MFDS Open API · Data is cached per session
+          MFDS 매칭 대시보드 · OpenFDA API + MFDS 공공 API · 세션 내 데이터 캐시 적용
         </footer>
       </main>
     </div>
