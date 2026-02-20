@@ -6,8 +6,8 @@ import { getPrimaryKorean, ingredientBaseToKorean } from "./innMapping";
 // 공공데이터포털 MFDS API 서비스 키 (공개 키)
 const MFDS_SERVICE_KEY = "78dd2db3fe72d72859ddac4b14b20240198fb736aebc531227e72a6f14d8783b";
 
-// MFDS 의약품 허가정보 엔드포인트
-const MFDS_BASE = "https://apis.data.go.kr/1471000";
+// MFDS 의약품 허가정보 엔드포인트 (Vite 프록시 경유 → CORS 우회)
+const MFDS_BASE = "/mfds-api/1471000";
 
 const INGREDIENT_CACHE = new Map<string, MFDSProduct[]>();
 
@@ -154,27 +154,30 @@ async function fetchAllPages(korName: string): Promise<MFDSProduct[]> {
 
 /**
  * Query MFDS by Ingredient_base — translates to Korean first.
+ * koOverride: 외부(수동 매핑 or Ingredient_base_ko)에서 직접 한국어 성분명을 전달하면 우선 사용.
  * Returns products + the Korean search term that was used.
  */
 export async function queryMFDSByIngredient(
   ingredientBase: string,
-  includeRevoked: boolean = false
+  includeRevoked: boolean = false,
+  koOverride?: string
 ): Promise<{ products: MFDSProduct[]; searchTerm: string; innMapped: boolean }> {
   if (!ingredientBase) return { products: [], searchTerm: "", innMapped: false };
 
-  const cacheKey = `${ingredientBase}__${includeRevoked}`;
+  // koOverride가 있으면 캐시 키에 포함하여 같은 영문 성분이라도 구분
+  const cacheKey = `${koOverride ?? ingredientBase}__${includeRevoked}`;
   if (INGREDIENT_CACHE.has(cacheKey)) {
     const cached = INGREDIENT_CACHE.get(cacheKey)!;
-    // read cached search term from a parallel map
     const cachedMeta = SEARCH_TERM_CACHE.get(cacheKey) ?? { searchTerm: "", innMapped: false };
     return { products: cached, ...cachedMeta };
   }
 
-  // Translate Ingredient_base to Korean
-  const primaryKo = getPrimaryKorean(ingredientBase);
-  const innMapped = primaryKo !== null;
+  // koOverride 우선 사용, 없으면 INN 사전 번역
+  const dictKo = getPrimaryKorean(ingredientBase);
+  const primaryKo = koOverride || dictKo;
+  const innMapped = primaryKo !== null && primaryKo !== "";
 
-  // If no mapping, try first token as-is (MFDS sometimes accepts partial English)
+  // 한국어 검색어 결정
   const searchTerm = primaryKo ?? ingredientBase.split(";")[0].trim();
 
   let allProducts: MFDSProduct[] = [];
@@ -182,8 +185,8 @@ export async function queryMFDSByIngredient(
     allProducts = await fetchAllPages(searchTerm);
   }
 
-  // If multi-component, also try secondary components
-  if (allProducts.length === 0) {
+  // 검색 결과가 없고 koOverride가 없으면 다중 성분 secondary fallback 시도
+  if (allProducts.length === 0 && !koOverride) {
     const { mapped } = ingredientBaseToKorean(ingredientBase);
     for (const { ko } of mapped.slice(1)) {
       if (ko && ko !== primaryKo) {
@@ -194,9 +197,13 @@ export async function queryMFDSByIngredient(
     }
   }
 
-  const filtered = allProducts.filter(
-    (p) => includeRevoked || p.취소취하 !== "Y"
-  );
+  // 신약구분 판별 헬퍼 (Y, 신약, 또는 신약 포함 문자열)
+  const isOriginal = (p: MFDSProduct) => {
+    const v = (p.신약구분 ?? "").trim();
+    return v === "Y" || v === "신약" || v.includes("신약");
+  };
+
+  const filtered = allProducts.filter((p) => includeRevoked || p.취소취하 !== "Y");
 
   INGREDIENT_CACHE.set(cacheKey, filtered);
   SEARCH_TERM_CACHE.set(cacheKey, { searchTerm, innMapped });
@@ -247,7 +254,9 @@ export async function calculateResults(
     let searchTerm = "";
     let innMapped = false;
     try {
-      const result = await queryMFDSByIngredient(row.Ingredient_base, options.includeRevoked);
+      // Ingredient_base_ko(브랜드→INN 자동매핑 or 수동매핑) 우선 사용
+      const koOverride = (row.Ingredient_base_ko || row.mfds_search_term) || undefined;
+      const result = await queryMFDSByIngredient(row.Ingredient_base, options.includeRevoked, koOverride);
       mfdsProducts = result.products;
       searchTerm = result.searchTerm;
       innMapped = result.innMapped;
@@ -255,10 +264,14 @@ export async function calculateResults(
       mfdsProducts = [];
     }
 
+    // 신약구분 판별 헬퍼 (강화 버전)
+    const isOriginalProduct = (p: MFDSProduct) => {
+      const v = (p.신약구분 ?? "").trim();
+      return v === "Y" || v === "신약" || v.includes("신약");
+    };
+
     const mfdsNotFound = mfdsProducts.length === 0;
-    const hasOriginal = mfdsProducts.some((p) =>
-      p.신약구분 === "Y" || p.신약구분?.includes("신약")
-    );
+    const hasOriginal = mfdsProducts.some(isOriginalProduct);
 
     const getKey = (p: MFDSProduct) =>
       options.countMode === "ingredient+form"
@@ -266,9 +279,7 @@ export async function calculateResults(
         : row.Ingredient_base;
 
     const uniqueKeys = new Set(mfdsProducts.map(getKey));
-    const genericProducts = mfdsProducts.filter((p) =>
-      p.신약구분 !== "Y" && !p.신약구분?.includes("신약")
-    );
+    const genericProducts = mfdsProducts.filter((p) => !isOriginalProduct(p));
     const genericCount =
       options.countMode === "ingredient+form"
         ? new Set(genericProducts.map((p) => getKey(p))).size
