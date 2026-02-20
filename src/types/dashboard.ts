@@ -16,6 +16,10 @@ export interface OpenFDAEnrichmentRow {
   openfda_active_ingredients_raw: string;
   Ingredient_base: string;
   openfda_confidence: OpenFDAConfidence;
+  // Korean INN translation for MFDS lookup
+  Ingredient_base_ko: string;       // Korean name used to query MFDS
+  mfds_search_term: string;         // Exact term sent to MFDS API
+  inn_mapped: boolean;              // Whether an INN mapping was found
 }
 
 export interface MFDSProduct {
@@ -33,6 +37,9 @@ export interface ResultRow {
   Product: string;
   Product_norm: string;
   Ingredient_base: string;
+  Ingredient_base_ko: string;
+  mfds_search_term: string;
+  inn_mapped: boolean;
   openfda_confidence: OpenFDAConfidence;
   original_허가여부: "Y" | "N" | "-";
   generic_count_excluding_original: number;
