@@ -11,6 +11,13 @@ export default defineConfig(({ mode }) => ({
     hmr: {
       overlay: false,
     },
+    proxy: {
+      "/mfds-api": {
+        target: "https://apis.data.go.kr",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/mfds-api/, ""),
+      },
+    },
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
