@@ -3,10 +3,11 @@ import type {
   ProcessingJob,
   SourceRow,
   SummaryMetrics,
+  OpenFDAEnrichmentRow,
 } from "@/types/dashboard";
 import { parseSourceExcel } from "@/lib/excelProcessor";
 import { batchEnrich } from "@/lib/openFDA";
-import { calculateResults } from "@/lib/mfds";
+import { calculateResults, clearMFDSCache } from "@/lib/mfds";
 
 const DEFAULT_SUMMARY: SummaryMetrics = {
   total_rows: 0,
@@ -135,5 +136,72 @@ export function useDashboard() {
     [patch]
   );
 
-  return { job, patch, reset, runPipeline };
+  /**
+   * MFDS 재처리 — 수동 매핑이 적용된 enrichmentRows로 MFDS 단계만 재실행
+   */
+  const rerunMFDS = useCallback(
+    async (updatedEnrichmentRows: OpenFDAEnrichmentRow[], options: { countMode: "ingredient" | "ingredient+form"; includeRevoked: boolean }) => {
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      // MFDS 캐시 클리어 (수동 매핑이 적용된 행을 새로 조회하기 위해)
+      clearMFDSCache();
+
+      patch({
+        enrichmentRows: updatedEnrichmentRows,
+        status: "matching",
+        progress: 52,
+        message: "수동 매핑 적용 후 MFDS 재조회 시작…",
+        errors: [],
+      });
+
+      try {
+        const { resultRows, genericItems, genericCompact, validationErrors } = await calculateResults(
+          updatedEnrichmentRows,
+          {
+            countMode: options.countMode,
+            includeRevoked: options.includeRevoked,
+            onProgress: (current, total, msg) => {
+              const pct = 52 + Math.round((current / total) * 44);
+              patch({ progress: pct, message: `[${current}/${total}] ${msg}`, status: "calculating" });
+            },
+            signal: controller.signal,
+          }
+        );
+
+        if (controller.signal.aborted) return;
+
+        const summary: SummaryMetrics = {
+          total_rows: updatedEnrichmentRows.length,
+          openfda_review_count: updatedEnrichmentRows.filter((r) => r.openfda_confidence === "REVIEW").length,
+          mfds_not_found: resultRows.filter((r) => r.mfds_not_found).length,
+          confidence_HIGH: updatedEnrichmentRows.filter((r) => r.openfda_confidence === "HIGH").length,
+          confidence_MEDIUM: updatedEnrichmentRows.filter((r) => r.openfda_confidence === "MEDIUM").length,
+          confidence_REVIEW: updatedEnrichmentRows.filter((r) => r.openfda_confidence === "REVIEW").length,
+          total_generic_item_rows: genericItems.length,
+          average_generic_per_source: updatedEnrichmentRows.length > 0
+            ? +(genericItems.length / updatedEnrichmentRows.length).toFixed(2)
+            : 0,
+          validation_errors: validationErrors,
+        };
+
+        patch({
+          resultRows,
+          genericItems,
+          genericCompact,
+          summary,
+          status: "done",
+          progress: 100,
+          message: "MFDS 재처리 완료.",
+          errors: validationErrors,
+        });
+      } catch (err) {
+        patch({ status: "error", errors: [String(err)] });
+      }
+    },
+    [patch]
+  );
+
+  return { job, patch, reset, runPipeline, rerunMFDS };
 }
