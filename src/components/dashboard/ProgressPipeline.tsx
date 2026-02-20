@@ -10,11 +10,11 @@ interface Step {
 }
 
 const STEPS: Step[] = [
-  { id: "uploading", label: "Source Upload", sub: "Parse Excel & detect columns" },
-  { id: "enriching", label: "OpenFDA Enrichment", sub: "Query FDA label & NDC endpoints" },
-  { id: "matching", label: "MFDS Matching", sub: "Ingredient-based product lookup" },
-  { id: "calculating", label: "Calculation", sub: "Original / generic counts + validation" },
-  { id: "done", label: "Complete", sub: "Results ready for export" },
+  { id: "uploading", label: "소스 업로드", sub: "엑셀 파싱 및 열 감지" },
+  { id: "enriching", label: "OpenFDA 보강", sub: "FDA label & NDC 엔드포인트 조회" },
+  { id: "matching", label: "MFDS 매칭", sub: "성분 기반 품목 조회" },
+  { id: "calculating", label: "계산", sub: "오리지널 / 제네릭 수 산출 + 검증" },
+  { id: "done", label: "완료", sub: "내보내기 준비 완료" },
 ];
 
 const STATUS_ORDER: JobStatus[] = ["idle", "uploading", "enriching", "matching", "calculating", "done", "error"];
@@ -87,7 +87,7 @@ const ProgressPipeline: React.FC<ProgressPipelineProps> = ({ status, progress, m
 
       {status === "error" && (
         <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm">
-          Processing failed. Check errors below.
+          처리 중 오류가 발생했습니다. 아래 오류 내용을 확인하세요.
         </div>
       )}
     </div>

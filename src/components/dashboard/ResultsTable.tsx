@@ -68,17 +68,17 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ rows }) => {
       <div className="flex flex-wrap items-center gap-3">
         <input
           className="flex-1 min-w-[160px] max-w-xs px-3 py-1.5 rounded bg-secondary border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-          placeholder="Filter by product or ingredient…"
+          placeholder="제품명 또는 성분으로 필터…"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
         />
         <label className="flex items-center gap-1.5 text-sm cursor-pointer select-none">
           <input type="checkbox" checked={onlyNotFound} onChange={(e) => setOnlyNotFound(e.target.checked)} className="accent-primary" />
-          <span className="text-muted-foreground">MFDS Not Found only</span>
+          <span className="text-muted-foreground">MFDS 미검색만</span>
         </label>
         <label className="flex items-center gap-1.5 text-sm cursor-pointer select-none">
           <input type="checkbox" checked={onlyOriginal} onChange={(e) => setOnlyOriginal(e.target.checked)} className="accent-primary" />
-          <span className="text-muted-foreground">신약 only</span>
+          <span className="text-muted-foreground">신약만</span>
         </label>
       </div>
 
@@ -88,9 +88,9 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ rows }) => {
             <tr>
               {[
                 { key: "순번" as SortKey, label: "순번" },
-                { key: "Product" as SortKey, label: "Product" },
-                { key: "Ingredient_base" as SortKey, label: "Ingredient_base" },
-                { key: "openfda_confidence" as SortKey, label: "Confidence" },
+                { key: "Product" as SortKey, label: "제품명" },
+                { key: "Ingredient_base" as SortKey, label: "성분명(영문)" },
+                { key: "openfda_confidence" as SortKey, label: "신뢰도" },
                 { key: "original_허가여부" as SortKey, label: "신약 여부" },
                 { key: "generic_count_excluding_original" as SortKey, label: "제네릭 수" },
                 { key: "total_count_including_original" as SortKey, label: "전체 품목" },
@@ -146,7 +146,7 @@ const ResultsTable: React.FC<ResultsTableProps> = ({ rows }) => {
               </tr>
             ))}
             {filtered.length === 0 && (
-              <tr><td colSpan={8} className="text-center py-8 text-muted-foreground">No matching rows</td></tr>
+              <tr><td colSpan={8} className="text-center py-8 text-muted-foreground">일치하는 행이 없습니다</td></tr>
             )}
           </tbody>
         </table>

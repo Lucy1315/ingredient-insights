@@ -16,7 +16,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFile, disabled }) => {
     async (file: File) => {
       setError(null);
       if (!file.name.match(/\.(xlsx|xls|csv)$/i)) {
-        setError("Please upload an Excel file (.xlsx, .xls) or CSV.");
+        setError("엑셀 파일(.xlsx, .xls) 또는 CSV 파일을 업로드해 주세요.");
         return;
       }
       try {
@@ -79,18 +79,18 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFile, disabled }) => {
         <div className="text-center">
           {preview ? (
             <>
-              <p className="font-semibold text-success">{preview.name}</p>
+          <p className="font-semibold text-success">{preview.name}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                {preview.rows} rows detected
+                {preview.rows}개 행 감지됨
               </p>
             </>
           ) : (
             <>
               <p className="font-semibold text-foreground">
-                Drop Excel file here or <span className="text-primary">browse</span>
+                여기에 엑셀 파일을 드래그하거나 <span className="text-primary">찾아보기</span>
               </p>
               <p className="text-sm text-muted-foreground mt-1">
-                .xlsx · .xls · .csv — Expects columns: 순번, Product
+                .xlsx · .xls · .csv — 필수 열: 순번, Product
               </p>
             </>
           )}
@@ -101,7 +101,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFile, disabled }) => {
         <div className="panel p-4 animate-slide-up">
           <div className="flex items-center gap-2 mb-3">
             <FileSpreadsheet className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium text-foreground">Detected Columns</span>
+            <span className="text-sm font-medium text-foreground">감지된 열</span>
           </div>
           <div className="flex flex-wrap gap-2">
             {preview.columns.map((col) => (
@@ -114,7 +114,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFile, disabled }) => {
             ))}
           </div>
           <p className="text-xs text-muted-foreground mt-3">
-            <span className="text-primary font-semibold">{preview.rows}</span> source rows ready for processing
+            <span className="text-primary font-semibold">{preview.rows}</span>개 소스 행 처리 준비 완료
           </p>
         </div>
       )}
