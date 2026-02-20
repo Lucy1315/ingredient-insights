@@ -11,13 +11,15 @@ import EnrichmentTable from "@/components/dashboard/EnrichmentTable";
 import ResultsTable from "@/components/dashboard/ResultsTable";
 import GenericItemsTable from "@/components/dashboard/GenericItemsTable";
 import ReviewQueue from "@/components/dashboard/ReviewQueue";
+import ManualMappingPanel from "@/components/dashboard/ManualMappingPanel";
 import { useDashboard } from "@/hooks/useDashboard";
 import { generateOutputExcel } from "@/lib/excelProcessor";
 
 const Index: React.FC = () => {
-  const { job, patch, reset, runPipeline } = useDashboard();
+  const { job, patch, reset, runPipeline, rerunMFDS } = useDashboard();
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [activeTab, setActiveTab] = useState("setup");
+  const [isRerunning, setIsRerunning] = useState(false);
 
   const [showSamplePreview, setShowSamplePreview] = useState(false);
 
@@ -44,6 +46,18 @@ const Index: React.FC = () => {
       summary: job.summary,
     });
   }, [job]);
+
+  const handleApplyMapping = useCallback((updated: Parameters<typeof rerunMFDS>[0]) => {
+    patch({ enrichmentRows: updated });
+  }, [patch, rerunMFDS]);
+
+  const handleRerunMFDS = useCallback(async (updated: Parameters<typeof rerunMFDS>[0]) => {
+    setIsRerunning(true);
+    setActiveTab("progress");
+    await rerunMFDS(updated, { countMode: job.countMode, includeRevoked: job.includeRevoked });
+    setIsRerunning(false);
+    setActiveTab("results");
+  }, [rerunMFDS, job.countMode, job.includeRevoked]);
 
   const isRunning = ["uploading", "enriching", "matching", "calculating"].includes(job.status);
   const isDone = job.status === "done";
@@ -351,7 +365,19 @@ const Index: React.FC = () => {
           </TabsContent>
 
           {/* RESULTS TAB */}
-          <TabsContent value="results" className="mt-4">
+          <TabsContent value="results" className="mt-4 space-y-4">
+            {/* 수동 한국어 성분명 매핑 패널 — 미매핑 항목이 있을 때 표시 */}
+            {isDone && job.enrichmentRows.some((r) => !r.Ingredient_base_ko) && (
+              <div className="panel p-5">
+                <h2 className="text-sm font-semibold text-foreground mb-3">한국어 성분명 수동 매핑</h2>
+                <ManualMappingPanel
+                  rows={job.enrichmentRows}
+                  onApply={handleApplyMapping}
+                  onRerun={handleRerunMFDS}
+                  isRerunning={isRerunning}
+                />
+              </div>
+            )}
             <div className="panel p-5">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-sm font-semibold text-foreground">결과 — 신약 여부 & 제네릭 수</h2>
