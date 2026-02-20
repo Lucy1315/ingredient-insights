@@ -31,18 +31,53 @@ export function parseSourceExcel(file: File): Promise<{ rows: SourceRow[]; colum
 
         const columnNames = Object.keys(raw[0]);
 
-        // Find 순번 and Product columns (flexible matching)
+        // Find 순번 column
         const seqKey = columnNames.find((c) =>
-          /순번|seq|no\.?|number|#|index/i.test(c)
-        ) ?? columnNames[0];
-        const prodKey = columnNames.find((c) =>
-          /product|brand|name|제품|품목|english/i.test(c)
-        ) ?? columnNames[1] ?? columnNames[0];
+          /^순번$|^seq$|^no\.?$|^number$|^#$|^index$/i.test(c.trim())
+        ) ?? columnNames.find((c) => /순번|seq/i.test(c)) ?? columnNames[0];
 
-        const rows: SourceRow[] = raw.map((r, idx) => ({
-          순번: r[seqKey] !== undefined ? String(r[seqKey]) : String(idx + 1),
-          Product: String(r[prodKey] ?? "").trim(),
-        })).filter((r) => r.Product);
+        // Find Product column — prefer exact "Product" match first to avoid picking
+        // columns like "MFDS 제품명" which may be empty output columns.
+        const prodKey =
+          columnNames.find((c) => /^product$/i.test(c.trim())) ??
+          columnNames.find((c) => /^brand$/i.test(c.trim())) ??
+          columnNames.find((c) => /^english/i.test(c.trim())) ??
+          columnNames.find((c) => /^품목명$|^제품명$|^name$/i.test(c.trim())) ??
+          // broader fallback — skip columns that look like output result columns
+          columnNames.find((c) => {
+            const n = c.trim().toLowerCase();
+            return /product|brand|english/.test(n) &&
+              !/(mfds|허가|generic|제네릭|ingredient)/.test(n);
+          }) ??
+          columnNames[1] ?? columnNames[0];
+
+        // Optional: find Ingredient column to pre-populate Korean INN
+        const ingrKey = columnNames.find((c) =>
+          /^ingredient$|^ingr$|^성분$|^성분명$/i.test(c.trim())
+        ) ?? columnNames.find((c) => /ingredient|성분/i.test(c) && !/mfds/i.test(c));
+
+        console.log("[parseSourceExcel] columns:", columnNames);
+        console.log("[parseSourceExcel] seqKey:", seqKey, "prodKey:", prodKey, "ingrKey:", ingrKey);
+
+        const rows: SourceRow[] = raw.map((r, idx) => {
+          const product = String(r[prodKey] ?? "").trim();
+          const row: SourceRow = {
+            순번: r[seqKey] !== undefined && String(r[seqKey]).trim() !== ""
+              ? String(r[seqKey]).trim()
+              : String(idx + 1),
+            Product: product,
+          };
+          // If the file already has an Ingredient column, attach it for MFDS pre-seeding
+          if (ingrKey) {
+            const ingr = String(r[ingrKey] ?? "").trim();
+            if (ingr) (row as unknown as Record<string, unknown>)["_ingredient_hint"] = ingr;
+          }
+          return row;
+        }).filter((r) => r.Product);
+
+        if (rows.length === 0) {
+          console.warn("[parseSourceExcel] No rows with Product found. prodKey =", prodKey, "Sample raw[0]:", raw[0]);
+        }
 
         resolve({ rows, columnNames });
       } catch (err) {

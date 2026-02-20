@@ -41,34 +41,45 @@ async function queryByKorIngredient(
   pageNo = 1,
   numOfRows = 100
 ): Promise<{ items: MFDSProduct[]; totalCount: number }> {
+  // 서비스 키는 이미 인코딩된 hex 문자열이므로 URLSearchParams로 이중 인코딩 방지
+  // 나머지 파라미터만 URLSearchParams로 처리 후 serviceKey를 raw로 붙임
   const params = new URLSearchParams({
-    serviceKey: MFDS_SERVICE_KEY,
     type: "json",
     numOfRows: String(numOfRows),
     pageNo: String(pageNo),
     ingrKorName: korName,
   });
 
-  const url = `${MFDS_BASE}/DrugPrdtPrmsnInfoService04/getDrugPrdtPrmsnDtlInq03?${params}`;
+  const url = `${MFDS_BASE}/DrugPrdtPrmsnInfoService04/getDrugPrdtPrmsnDtlInq03?serviceKey=${MFDS_SERVICE_KEY}&${params}`;
 
   try {
     const res = await fetchWithRetry(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    if (!res.ok) {
+      console.warn(`[MFDS] getDrugPrdtPrmsnDtlInq03 HTTP ${res.status} for "${korName}"`);
+      return { items: [], totalCount: 0 };
+    }
+    const text = await res.text();
+    let data: Record<string, unknown>;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      console.warn(`[MFDS] non-JSON response for "${korName}":`, text.slice(0, 200));
+      return { items: [], totalCount: 0 };
+    }
 
-    const body = data?.body ?? data?.response?.body ?? {};
-    const header = data?.header ?? data?.response?.header ?? {};
+    const body = (data?.body ?? (data as Record<string, Record<string, unknown>>)?.response?.body ?? {}) as Record<string, unknown>;
+    const header = (data?.header ?? (data as Record<string, Record<string, unknown>>)?.response?.header ?? {}) as Record<string, string>;
 
     if (header?.resultCode && !["00", "000", "0000"].includes(String(header.resultCode))) {
       console.warn(`[MFDS] resultCode=${header.resultCode} for "${korName}": ${header.resultMsg}`);
       return { items: [], totalCount: 0 };
     }
 
-    const rawItems = body?.items?.item ?? body?.items ?? [];
+    const rawItems = (body?.items as Record<string, unknown>)?.item ?? body?.items ?? [];
     const itemArray = Array.isArray(rawItems) ? rawItems : rawItems ? [rawItems] : [];
     const totalCount = Number(body?.totalCount ?? 0);
 
-    const products: MFDSProduct[] = itemArray.map((item: Record<string, string>) => ({
+    const products: MFDSProduct[] = (itemArray as Record<string, string>[]).map((item) => ({
       품목기준코드: item.ITEM_SEQ ?? item.itemSeq ?? "",
       제품명: item.ITEM_NAME ?? item.itemName ?? "",
       업체명: item.ENTP_NAME ?? item.entpName ?? "",
@@ -78,6 +89,7 @@ async function queryByKorIngredient(
       성분: item.MAIN_ITEM_INGR ?? item.INGR_NAME ?? item.materialName ?? "",
     }));
 
+    console.log(`[MFDS] getDrugPrdtPrmsnDtlInq03 "${korName}" → ${products.length} items (total: ${totalCount})`);
     return { items: products, totalCount };
   } catch (err) {
     console.warn(`[MFDS] query failed for "${korName}":`, err);
@@ -94,24 +106,34 @@ async function queryEasyDrugByKorName(
   numOfRows = 100
 ): Promise<MFDSProduct[]> {
   const params = new URLSearchParams({
-    serviceKey: MFDS_SERVICE_KEY,
     type: "json",
     numOfRows: String(numOfRows),
     pageNo: String(pageNo),
     itemName: keyword,
   });
 
-  const url = `${MFDS_BASE}/DrbEasyDrugInfoService/getDrbEasyDrugList?${params}`;
+  // serviceKey를 raw로 붙여 이중 인코딩 방지
+  const url = `${MFDS_BASE}/DrbEasyDrugInfoService/getDrbEasyDrugList?serviceKey=${MFDS_SERVICE_KEY}&${params}`;
 
   try {
     const res = await fetchWithRetry(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    const body = data?.body ?? data?.response?.body ?? {};
-    const rawItems = body?.items?.item ?? body?.items ?? [];
+    if (!res.ok) {
+      console.warn(`[MFDS] getDrbEasyDrugList HTTP ${res.status} for "${keyword}"`);
+      return [];
+    }
+    const text = await res.text();
+    let data: Record<string, unknown>;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      console.warn(`[MFDS] non-JSON response for "${keyword}":`, text.slice(0, 200));
+      return [];
+    }
+    const body = (data?.body ?? (data as Record<string, Record<string, unknown>>)?.response?.body ?? {}) as Record<string, unknown>;
+    const rawItems = (body?.items as Record<string, unknown>)?.item ?? body?.items ?? [];
     const itemArray = Array.isArray(rawItems) ? rawItems : rawItems ? [rawItems] : [];
 
-    return itemArray.map((item: Record<string, string>) => ({
+    const results = (itemArray as Record<string, string>[]).map((item) => ({
       품목기준코드: item.itemSeq ?? "",
       제품명: item.itemName ?? "",
       업체명: item.entpName ?? "",
@@ -120,6 +142,9 @@ async function queryEasyDrugByKorName(
       취소취하: item.cancelDate ? "Y" : "N",
       성분: item.materialName ?? "",
     }));
+
+    console.log(`[MFDS] getDrbEasyDrugList "${keyword}" → ${results.length} items`);
+    return results;
   } catch (err) {
     console.warn(`[MFDS] easy drug query failed for "${keyword}":`, err);
     return [];
