@@ -1,12 +1,12 @@
 // ─── MFDS API Client ─────────────────────────────────────────────────────────
 
 import type { MFDSProduct, OpenFDAEnrichmentRow, ResultRow, GenericItem, GenericCompact } from "../types/dashboard";
+import { getPrimaryKorean, ingredientBaseToKorean } from "./innMapping";
 
 // 공공데이터포털 MFDS API 서비스 키 (공개 키)
 const MFDS_SERVICE_KEY = "78dd2db3fe72d72859ddac4b14b20240198fb736aebc531227e72a6f14d8783b";
 
-// 의약품 허가정보 서비스 (e약은요 + 의약품 통합정보)
-// Primary endpoint: 의약품 성분별 품목 조회
+// MFDS 의약품 허가정보 엔드포인트
 const MFDS_BASE = "https://apis.data.go.kr/1471000";
 
 const INGREDIENT_CACHE = new Map<string, MFDSProduct[]>();
@@ -15,7 +15,7 @@ async function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-async function fetchWithRetry(url: string, retries = 3, backoff = 600): Promise<Response> {
+async function fetchWithRetry(url: string, retries = 3, backoff = 800): Promise<Response> {
   for (let i = 0; i < retries; i++) {
     try {
       const res = await fetch(url, { signal: AbortSignal.timeout(12000) });
@@ -33,11 +33,11 @@ async function fetchWithRetry(url: string, retries = 3, backoff = 600): Promise<
 }
 
 /**
- * 의약품 허가정보 서비스 — getDrugPrdtPrmsnInfoList01
- * 성분명 기반 품목 전체 조회 (페이지네이션 포함)
+ * 의약품 허가정보 — 성분명(한국어)으로 조회
+ * endpoint: getDrugPrdtPrmsnDtlInq03 (ingrKorName)
  */
-async function queryDrugPermitByIngredient(
-  ingredientName: string,
+async function queryByKorIngredient(
+  korName: string,
   pageNo = 1,
   numOfRows = 100
 ): Promise<{ items: MFDSProduct[]; totalCount: number }> {
@@ -46,7 +46,7 @@ async function queryDrugPermitByIngredient(
     type: "json",
     numOfRows: String(numOfRows),
     pageNo: String(pageNo),
-    ingrKorName: ingredientName,       // 성분 한글명 검색
+    ingrKorName: korName,
   });
 
   const url = `${MFDS_BASE}/DrugPrdtPrmsnInfoService04/getDrugPrdtPrmsnDtlInq03?${params}`;
@@ -56,16 +56,16 @@ async function queryDrugPermitByIngredient(
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
 
-    // 응답 구조 처리 (공공데이터포털 표준 응답)
-    const header = data?.header ?? data?.response?.header ?? {};
     const body = data?.body ?? data?.response?.body ?? {};
+    const header = data?.header ?? data?.response?.header ?? {};
 
-    if (header?.resultCode && header.resultCode !== "00" && header.resultCode !== "0000") {
-      throw new Error(`MFDS API error: ${header.resultMsg}`);
+    if (header?.resultCode && !["00", "000", "0000"].includes(String(header.resultCode))) {
+      console.warn(`[MFDS] resultCode=${header.resultCode} for "${korName}": ${header.resultMsg}`);
+      return { items: [], totalCount: 0 };
     }
 
-    const items = body?.items?.item ?? body?.items ?? [];
-    const itemArray = Array.isArray(items) ? items : items ? [items] : [];
+    const rawItems = body?.items?.item ?? body?.items ?? [];
+    const itemArray = Array.isArray(rawItems) ? rawItems : rawItems ? [rawItems] : [];
     const totalCount = Number(body?.totalCount ?? 0);
 
     const products: MFDSProduct[] = itemArray.map((item: Record<string, string>) => ({
@@ -80,16 +80,15 @@ async function queryDrugPermitByIngredient(
 
     return { items: products, totalCount };
   } catch (err) {
-    console.warn(`[MFDS] query failed for "${ingredientName}":`, err);
+    console.warn(`[MFDS] query failed for "${korName}":`, err);
     return { items: [], totalCount: 0 };
   }
 }
 
 /**
- * e약은요 서비스 — getDrbEasyDrugList (용이하게 검색 가능한 fallback)
- * 품목명/성분명 통합 검색
+ * e약은요 — 품목명으로 fallback 검색
  */
-async function queryEasyDrugList(
+async function queryEasyDrugByKorName(
   keyword: string,
   pageNo = 1,
   numOfRows = 100
@@ -108,10 +107,9 @@ async function queryEasyDrugList(
     const res = await fetchWithRetry(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-
     const body = data?.body ?? data?.response?.body ?? {};
-    const items = body?.items?.item ?? body?.items ?? [];
-    const itemArray = Array.isArray(items) ? items : items ? [items] : [];
+    const rawItems = body?.items?.item ?? body?.items ?? [];
+    const itemArray = Array.isArray(rawItems) ? rawItems : rawItems ? [rawItems] : [];
 
     return itemArray.map((item: Record<string, string>) => ({
       품목기준코드: item.itemSeq ?? "",
@@ -123,34 +121,31 @@ async function queryEasyDrugList(
       성분: item.materialName ?? "",
     }));
   } catch (err) {
-    console.warn(`[MFDS] easy drug list failed for "${keyword}":`, err);
+    console.warn(`[MFDS] easy drug query failed for "${keyword}":`, err);
     return [];
   }
 }
 
 /**
- * 전체 페이지 로드 (100건 이상 결과 처리)
+ * Paginated fetch for permit API
  */
-async function fetchAllPages(ingredientName: string): Promise<MFDSProduct[]> {
-  const first = await queryDrugPermitByIngredient(ingredientName, 1, 100);
+async function fetchAllPages(korName: string): Promise<MFDSProduct[]> {
+  const first = await queryByKorIngredient(korName, 1, 100);
   let all = [...first.items];
 
-  const totalPages = Math.ceil(first.totalCount / 100);
-  if (totalPages > 1) {
+  if (first.totalCount > 100) {
+    const totalPages = Math.min(Math.ceil(first.totalCount / 100), 10);
     const pagePromises = [];
-    for (let p = 2; p <= Math.min(totalPages, 10); p++) {
-      // max 1000 results
-      pagePromises.push(queryDrugPermitByIngredient(ingredientName, p, 100));
+    for (let p = 2; p <= totalPages; p++) {
+      pagePromises.push(queryByKorIngredient(korName, p, 100));
     }
     const pages = await Promise.all(pagePromises);
-    for (const page of pages) {
-      all = [...all, ...page.items];
-    }
+    for (const page of pages) all = [...all, ...page.items];
   }
 
-  // Fallback to e약은요 if primary returns nothing
+  // Fallback: if primary returned nothing, try e약은요 by Korean name
   if (all.length === 0) {
-    const fallback = await queryEasyDrugList(ingredientName, 1, 100);
+    const fallback = await queryEasyDrugByKorName(korName, 1, 100);
     all = fallback;
   }
 
@@ -158,35 +153,63 @@ async function fetchAllPages(ingredientName: string): Promise<MFDSProduct[]> {
 }
 
 /**
- * Query MFDS API for products by ingredient base key.
+ * Query MFDS by Ingredient_base — translates to Korean first.
+ * Returns products + the Korean search term that was used.
  */
 export async function queryMFDSByIngredient(
   ingredientBase: string,
   includeRevoked: boolean = false
-): Promise<MFDSProduct[]> {
-  if (!ingredientBase) return [];
+): Promise<{ products: MFDSProduct[]; searchTerm: string; innMapped: boolean }> {
+  if (!ingredientBase) return { products: [], searchTerm: "", innMapped: false };
 
   const cacheKey = `${ingredientBase}__${includeRevoked}`;
   if (INGREDIENT_CACHE.has(cacheKey)) {
-    return INGREDIENT_CACHE.get(cacheKey)!;
+    const cached = INGREDIENT_CACHE.get(cacheKey)!;
+    // read cached search term from a parallel map
+    const cachedMeta = SEARCH_TERM_CACHE.get(cacheKey) ?? { searchTerm: "", innMapped: false };
+    return { products: cached, ...cachedMeta };
   }
 
-  // Extract first ingredient (before semicolon) as primary search term
-  const primaryIngredient = ingredientBase.split(";")[0].trim();
-  if (!primaryIngredient) return [];
+  // Translate Ingredient_base to Korean
+  const primaryKo = getPrimaryKorean(ingredientBase);
+  const innMapped = primaryKo !== null;
 
-  const all = await fetchAllPages(primaryIngredient);
+  // If no mapping, try first token as-is (MFDS sometimes accepts partial English)
+  const searchTerm = primaryKo ?? ingredientBase.split(";")[0].trim();
 
-  const products = all.filter(
+  let allProducts: MFDSProduct[] = [];
+  if (searchTerm) {
+    allProducts = await fetchAllPages(searchTerm);
+  }
+
+  // If multi-component, also try secondary components
+  if (allProducts.length === 0) {
+    const { mapped } = ingredientBaseToKorean(ingredientBase);
+    for (const { ko } of mapped.slice(1)) {
+      if (ko && ko !== primaryKo) {
+        const secondary = await fetchAllPages(ko);
+        if (secondary.length > 0) { allProducts = secondary; break; }
+        await sleep(100);
+      }
+    }
+  }
+
+  const filtered = allProducts.filter(
     (p) => includeRevoked || p.취소취하 !== "Y"
   );
 
-  INGREDIENT_CACHE.set(cacheKey, products);
-  return products;
+  INGREDIENT_CACHE.set(cacheKey, filtered);
+  SEARCH_TERM_CACHE.set(cacheKey, { searchTerm, innMapped });
+
+  return { products: filtered, searchTerm, innMapped };
 }
+
+// Secondary meta cache
+const SEARCH_TERM_CACHE = new Map<string, { searchTerm: string; innMapped: boolean }>();
 
 export function clearMFDSCache() {
   INGREDIENT_CACHE.clear();
+  SEARCH_TERM_CACHE.clear();
 }
 
 export type CountMode = "ingredient" | "ingredient+form";
@@ -215,11 +238,19 @@ export async function calculateResults(
   for (let i = 0; i < enrichmentRows.length; i++) {
     if (options.signal?.aborted) break;
     const row = enrichmentRows[i];
-    options.onProgress?.(i, enrichmentRows.length, `MFDS 조회: ${row.Ingredient_base}`);
+
+    const { korean } = ingredientBaseToKorean(row.Ingredient_base);
+    const koLabel = korean[0] ? `(${korean[0]})` : "(미매핑)";
+    options.onProgress?.(i, enrichmentRows.length, `MFDS 조회 ${i + 1}/${enrichmentRows.length}: ${row.Ingredient_base} ${koLabel}`);
 
     let mfdsProducts: MFDSProduct[] = [];
+    let searchTerm = "";
+    let innMapped = false;
     try {
-      mfdsProducts = await queryMFDSByIngredient(row.Ingredient_base, options.includeRevoked);
+      const result = await queryMFDSByIngredient(row.Ingredient_base, options.includeRevoked);
+      mfdsProducts = result.products;
+      searchTerm = result.searchTerm;
+      innMapped = result.innMapped;
     } catch {
       mfdsProducts = [];
     }
@@ -229,7 +260,6 @@ export async function calculateResults(
       p.신약구분 === "Y" || p.신약구분?.includes("신약")
     );
 
-    // Filter by count mode
     const getKey = (p: MFDSProduct) =>
       options.countMode === "ingredient+form"
         ? `${row.Ingredient_base}__${p.제형}`
@@ -249,6 +279,9 @@ export async function calculateResults(
       Product: row.Product,
       Product_norm: row.Product_norm,
       Ingredient_base: row.Ingredient_base,
+      Ingredient_base_ko: row.Ingredient_base_ko,
+      mfds_search_term: searchTerm,
+      inn_mapped: innMapped,
       openfda_confidence: row.openfda_confidence,
       original_허가여부: mfdsNotFound ? "-" : hasOriginal ? "Y" : "N",
       generic_count_excluding_original: mfdsNotFound ? 0 : genericCount,
@@ -257,7 +290,6 @@ export async function calculateResults(
     };
     resultRows.push(result);
 
-    // Generic items
     const rowGenericItems: GenericItem[] = genericProducts.map((p) => ({
       source_순번: row.순번,
       source_Product: row.Product,
@@ -271,26 +303,17 @@ export async function calculateResults(
     }));
     allGenericItems.push(...rowGenericItems);
 
-    // Validation: count consistency check
-    if (options.countMode === "ingredient" && rowGenericItems.length !== genericCount) {
-      validationErrors.push(
-        `Row 순번=${row.순번} (${row.Product}): item count mismatch — items=${rowGenericItems.length}, generic_count=${genericCount}`
-      );
-    }
-
-    await sleep(100); // 100ms pacing between rows to respect API rate limits
+    await sleep(120);
   }
 
-  // Build compact sheet
+  // Build compact
   const genericCompact: GenericCompact[] = enrichmentRows.map((row) => {
     const items = allGenericItems.filter((g) => String(g.source_순번) === String(row.순번));
     const resultRow = resultRows.find((r) => String(r.순번) === String(row.순번));
     const genericCount = resultRow?.generic_count_excluding_original ?? 0;
     if (items.length !== genericCount) {
       const errMsg = `Row 순번=${row.순번}: generic_items rows (${items.length}) ≠ generic_count (${genericCount})`;
-      if (!validationErrors.includes(errMsg)) {
-        validationErrors.push(errMsg);
-      }
+      if (!validationErrors.includes(errMsg)) validationErrors.push(errMsg);
     }
     return {
       순번: row.순번,

@@ -50,7 +50,8 @@ const EnrichmentTable: React.FC<EnrichmentTableProps> = ({ rows }) => {
     { key: "openfda_brand_name", label: "FDA Brand" },
     { key: "openfda_generic_name", label: "FDA Generic" },
     { key: "openfda_active_ingredients_raw", label: "Active Ingredients (raw)" },
-    { key: "Ingredient_base", label: "Ingredient_base" },
+    { key: "Ingredient_base", label: "Ingredient_base (EN)" },
+    { key: "Ingredient_base_ko", label: "한국어 성분명 (MFDS)" },
     { key: "openfda_confidence", label: "Confidence" },
   ];
 
@@ -92,16 +93,26 @@ const EnrichmentTable: React.FC<EnrichmentTableProps> = ({ rows }) => {
             {sorted.map((row, i) => (
               <tr key={i} className="table-row-hover border-b border-border/50">
                 <td className="px-3 py-2 font-mono text-muted-foreground">{row.순번}</td>
-                <td className="px-3 py-2 font-medium text-foreground max-w-[160px] truncate">{row.Product}</td>
-                <td className="px-3 py-2 text-foreground max-w-[120px] truncate">{row.openfda_brand_name || <span className="text-muted-foreground">—</span>}</td>
-                <td className="px-3 py-2 text-muted-foreground max-w-[120px] truncate">{row.openfda_generic_name || "—"}</td>
-                <td className="px-3 py-2 text-muted-foreground max-w-[200px] truncate" title={row.openfda_active_ingredients_raw}>{row.openfda_active_ingredients_raw || "—"}</td>
-                <td className="px-3 py-2 text-primary font-mono max-w-[160px] truncate" title={row.Ingredient_base}>{row.Ingredient_base}</td>
+                <td className="px-3 py-2 font-medium text-foreground max-w-[140px] truncate">{row.Product}</td>
+                <td className="px-3 py-2 text-foreground max-w-[110px] truncate">{row.openfda_brand_name || <span className="text-muted-foreground">—</span>}</td>
+                <td className="px-3 py-2 text-muted-foreground max-w-[110px] truncate">{row.openfda_generic_name || "—"}</td>
+                <td className="px-3 py-2 text-muted-foreground max-w-[160px] truncate" title={row.openfda_active_ingredients_raw}>{row.openfda_active_ingredients_raw || "—"}</td>
+                <td className="px-3 py-2 text-primary font-mono max-w-[140px] truncate" title={row.Ingredient_base}>{row.Ingredient_base}</td>
+                <td className="px-3 py-2 max-w-[130px]">
+                  {row.Ingredient_base_ko ? (
+                    <span className="flex items-center gap-1">
+                      <span className="status-high px-1.5 py-0.5 rounded text-[10px] font-bold flex-shrink-0">매핑</span>
+                      <span className="text-success font-medium truncate" title={row.Ingredient_base_ko}>{row.Ingredient_base_ko}</span>
+                    </span>
+                  ) : (
+                    <span className="status-review px-1.5 py-0.5 rounded text-[10px]">미매핑</span>
+                  )}
+                </td>
                 <td className="px-3 py-2"><ConfidenceBadge value={row.openfda_confidence} /></td>
               </tr>
             ))}
             {sorted.length === 0 && (
-              <tr><td colSpan={7} className="text-center py-8 text-muted-foreground">No data</td></tr>
+              <tr><td colSpan={8} className="text-center py-8 text-muted-foreground">No data</td></tr>
             )}
           </tbody>
         </table>

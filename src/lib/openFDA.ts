@@ -5,6 +5,7 @@ import {
   extractPrimaryToken,
   generateIngredientBase,
 } from "./ingredientNormalizer";
+import { getPrimaryKorean } from "./innMapping";
 import type { OpenFDAConfidence, OpenFDAEnrichmentRow, SourceRow } from "../types/dashboard";
 
 const OPENFDA_BASE = "https://api.fda.gov/drug";
@@ -125,6 +126,9 @@ export async function enrichRowWithOpenFDA(
     found = await queryLabelEndpoint(shortToken);
   }
 
+  const ingredientBase = found?.ingredients ? generateIngredientBase(found.ingredients) : norm;
+  const koName = getPrimaryKorean(ingredientBase) ?? "";
+
   const enriched: OpenFDAEnrichmentRow = {
     순번: row.순번,
     Product: row.Product,
@@ -132,8 +136,11 @@ export async function enrichRowWithOpenFDA(
     openfda_brand_name: found?.brand ?? "",
     openfda_generic_name: found?.generic ?? "",
     openfda_active_ingredients_raw: found?.ingredients ?? "",
-    Ingredient_base: found?.ingredients ? generateIngredientBase(found.ingredients) : norm,
+    Ingredient_base: ingredientBase,
     openfda_confidence: found?.confidence ?? "REVIEW",
+    Ingredient_base_ko: koName,
+    mfds_search_term: koName,
+    inn_mapped: koName !== "",
   };
 
   CACHE.set(norm, enriched);
