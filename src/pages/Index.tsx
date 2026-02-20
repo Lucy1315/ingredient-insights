@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Activity, Database, FlaskConical, Eye, List, AlertTriangle, Download, RefreshCw, Play, Settings } from "lucide-react";
+import { Activity, Database, FlaskConical, Eye, List, AlertTriangle, Download, RefreshCw, Play, Settings, FileDown, Zap, Table2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { downloadSampleExcel, getSampleFile, SAMPLE_PRODUCT_LIST } from "@/lib/sampleData";
 
 import FileUpload from "@/components/dashboard/FileUpload";
 import ProgressPipeline from "@/components/dashboard/ProgressPipeline";
@@ -17,6 +18,8 @@ const Index: React.FC = () => {
   const { job, patch, reset, runPipeline } = useDashboard();
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [activeTab, setActiveTab] = useState("setup");
+
+  const [showSamplePreview, setShowSamplePreview] = useState(false);
 
   const handleFile = useCallback((file: File) => {
     setUploadedFile(file);
@@ -141,6 +144,78 @@ const Index: React.FC = () => {
 
           {/* SETUP TAB */}
           <TabsContent value="setup" className="mt-4 space-y-5">
+            {/* Sample Quick-Start Banner */}
+            <div className="panel p-4 border-primary/20 bg-primary/5 animate-slide-up">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center flex-shrink-0">
+                    <Zap className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">Quick Test with Sample Data</p>
+                    <p className="text-xs text-muted-foreground">20 well-known drugs (Aspirin, Lipitor, Plavix…) pre-loaded for pipeline testing</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowSamplePreview((v) => !v)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-border bg-secondary text-xs text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
+                  >
+                    <Table2 className="w-3.5 h-3.5" />
+                    {showSamplePreview ? "Hide Preview" : "Preview"}
+                  </button>
+                  <button
+                    onClick={downloadSampleExcel}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-border bg-secondary text-xs text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
+                  >
+                    <FileDown className="w-3.5 h-3.5" />
+                    Download .xlsx
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const file = getSampleFile();
+                      setUploadedFile(file);
+                      setActiveTab("progress");
+                      await runPipeline(file, {
+                        countMode: job.countMode,
+                        includeRevoked: job.includeRevoked,
+                      });
+                      setActiveTab("results");
+                    }}
+                    disabled={isRunning}
+                    className="flex items-center gap-1.5 px-4 py-1.5 rounded bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50"
+                  >
+                    <Zap className="w-3.5 h-3.5" />
+                    Use Sample & Run
+                  </button>
+                </div>
+              </div>
+
+              {/* Sample preview table */}
+              {showSamplePreview && (
+                <div className="mt-4 border-t border-border pt-4 animate-slide-up">
+                  <div className="overflow-auto rounded-lg border border-border max-h-52">
+                    <table className="w-full text-xs">
+                      <thead className="sticky top-0 bg-secondary border-b border-border">
+                        <tr>
+                          <th className="px-3 py-2 text-left text-muted-foreground font-semibold w-16">순번</th>
+                          <th className="px-3 py-2 text-left text-muted-foreground font-semibold">Product</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {SAMPLE_PRODUCT_LIST.map((row) => (
+                          <tr key={row.순번} className="table-row-hover border-b border-border/40">
+                            <td className="px-3 py-1.5 font-mono text-muted-foreground">{row.순번}</td>
+                            <td className="px-3 py-1.5 font-medium text-foreground">{row.Product}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="grid md:grid-cols-2 gap-6">
               <div className="panel p-5 space-y-4">
                 <div>
@@ -148,6 +223,13 @@ const Index: React.FC = () => {
                   <p className="text-xs text-muted-foreground">Upload an Excel file with columns: <code className="bg-muted px-1 py-0.5 rounded text-xs">순번</code> and <code className="bg-muted px-1 py-0.5 rounded text-xs">Product</code></p>
                 </div>
                 <FileUpload onFile={handleFile} disabled={isRunning} />
+                {uploadedFile && (
+                  <div className="flex items-center gap-2 p-2 rounded bg-primary/8 border border-primary/20">
+                    <div className="pulse-dot flex-shrink-0" />
+                    <span className="text-xs text-primary font-medium truncate">{uploadedFile.name}</span>
+                    <span className="text-xs text-muted-foreground ml-auto flex-shrink-0">ready</span>
+                  </div>
+                )}
               </div>
 
               <div className="panel p-5 space-y-4">
